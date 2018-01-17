@@ -81,15 +81,13 @@ func main() {
 	err = json.Unmarshal(body, &vault_token)
 	check(err)
 
-	var out bytes.Buffer
 	cmd := exec.Command("consul-template",
 		append(strings.Fields(*consul_template_params),
 			"-config="+*config_file)...)
 	cmd.Env = append(os.Environ(),
 		"VAULT_TOKEN="+vault_token.Auth.ClientToken)
-	cmd.Stdout = &out
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	check(err)
-
-	log.Print(out.String())
 }
