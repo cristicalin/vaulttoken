@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	// "fmt"
 	"flag"
+	// "fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -43,6 +44,8 @@ func main() {
 	token_file := flag.String("token",
 		"/var/run/secrets/kubernetes.io/serviceaccount/token",
 		"The kubernetes token file")
+	auth_url := flag.String("auth-url", "/v1/auth/kubernetes/login",
+		"The Vault authentication URL")
 	consul_template_params := flag.String("params", "",
 		"Extra parameters to be passed to the consul-template command")
 	role := flag.String("role", "openstack", "The Vault role binding")
@@ -58,11 +61,16 @@ func main() {
 	err = hcl.Decode(&config, string(config_file_content))
 	check(err)
 
-	token := map[string]string{"jwt": string(token_file_content), "role": *role}
+	token := map[string]string{"jwt": string(token_file_content),
+		"role": *role}
 	json_token, err := json.Marshal(token)
 	check(err)
 
-	response, err := http.Post(config.Vault.Address, "application/json",
+	uri, err := url.Parse(config.Vault.Address)
+	check(err)
+	uri.Path = *auth_url
+
+	response, err := http.Post(uri.String(), "application/json",
 		bytes.NewBuffer(json_token))
 	check(err)
 
@@ -74,10 +82,11 @@ func main() {
 	check(err)
 
 	var out bytes.Buffer
-	cmd := exec.Command("consul-template")
-	cmd.Env = append(os.Environ(), "VAULT_TOKEN="+vault_token.Auth.ClientToken)
-	cmd.Args = append(strings.Fields(*consul_template_params),
-		"-config=", *config_file)
+	cmd := exec.Command("consul-template",
+		append(strings.Fields(*consul_template_params),
+			"-config="+*config_file)...)
+	cmd.Env = append(os.Environ(),
+		"VAULT_TOKEN="+vault_token.Auth.ClientToken)
 	cmd.Stdout = &out
 	err = cmd.Run()
 	check(err)
