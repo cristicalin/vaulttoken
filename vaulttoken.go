@@ -83,7 +83,7 @@ func main() {
 	check(err)
 
 	if len(vault_token.Errors) > 0 {
-		log.Fatal("Error trying to authenticate to vault: %v", vault_token.Errors)
+		log.Fatal("Error trying to authenticate to vault: ", vault_token.Errors)
 	}
 
 	cmd := exec.Command("consul-template",
