@@ -22,7 +22,7 @@ type Config struct {
 		Grace       string `hcl:"grace"`
 		Token       string `hcl:"token"`
 		UnwrapToken bool   `hcl:"unwrap_token"`
-		RenewToken  bool   `hcl:"renw_token"`
+		RenewToken  bool   `hcl:"renew_token"`
 	} `hcl:"vault"`
 }
 
